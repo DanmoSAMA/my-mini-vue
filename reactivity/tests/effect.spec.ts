@@ -54,6 +54,29 @@ describe('effect', () => {
     expect(dummy).toBe(2);
   });
 
+  it('stop', () => {
+    let dummy;
+    const obj = reactive({ prop: 1 });
+    const runner = effect(() => {
+      dummy = obj.prop;
+      return 1;
+    });
+    // 引发trigger，调用effect.run()，并且又触发了getter里的track
+    // track结束后回到run，再把shouldTrack设置为false
+    obj.prop = 2;
+    expect(dummy).toBe(2);
+    stop(runner);
+    // getter不会触发track
+    obj.prop++;
+    expect(dummy).toBe(2);
+
+    // stopped effect should still be manually callable
+    const result = runner();
+    obj.prop++;
+    expect(result).toBe(1);
+    expect(dummy).toBe(3);
+  });
+
   it('onStop', () => {
     const obj = reactive({
       foo: 1

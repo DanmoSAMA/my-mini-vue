@@ -1,3 +1,12 @@
+const targetMap = new Map();
+let activeEffect;
+let shouldTrack = false;
+
+type effectOptions = {
+  scheduler?: Function;
+  onStop?: Function;
+};
+
 class ReactiveEffect {
   private _fn: Function;
   public scheduler: Function | undefined;
@@ -11,8 +20,19 @@ class ReactiveEffect {
     this.onStop = onStop;
   }
   run() {
+    if (!this.active) {
+      return this._fn();
+    }
+
     activeEffect = this;
-    return this._fn();
+    // 在执行回调前，先设置shouldTrack
+    // 确保本次回调执行的过程中，如果访问了响应式对象的属性，依然能够track
+    shouldTrack = true;
+    const res = this._fn();
+    // 回调执行完毕，重置shouldTrack
+    shouldTrack = false;
+
+    return res;
   }
   stop() {
     if (this.active) {
@@ -29,14 +49,9 @@ function cleanEffect(effect) {
   effect.deps.forEach((dep: Set<ReactiveEffect>) => {
     dep.delete(effect);
   });
+  effect.deps.length = 0;
 }
 
-type effectOptions = {
-  scheduler?: Function;
-  onStop?: Function;
-};
-
-let activeEffect;
 export function effect(fn, options: effectOptions = {}) {
   const { scheduler, onStop } = options;
   const _effect = new ReactiveEffect(fn, scheduler, onStop);
@@ -46,8 +61,9 @@ export function effect(fn, options: effectOptions = {}) {
   return runner;
 }
 
-const targetMap = new Map();
 export function track(target, key) {
+  if (!isTracking()) return;
+
   let depsMap = targetMap.get(target);
   if (!depsMap) {
     depsMap = new Map();
@@ -61,9 +77,11 @@ export function track(target, key) {
   }
   dep.add(activeEffect);
 
-  if (!activeEffect) return;
-
   activeEffect.deps.push(dep);
+}
+
+function isTracking() {
+  return shouldTrack && activeEffect !== undefined;
 }
 
 export function trigger(target, key) {
