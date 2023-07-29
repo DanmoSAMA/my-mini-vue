@@ -7,7 +7,7 @@ type effectOptions = {
   onStop?: Function;
 };
 
-class ReactiveEffect {
+export class ReactiveEffect {
   private _fn: Function;
   public scheduler: Function | undefined;
   deps = [];
