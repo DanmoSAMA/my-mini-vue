@@ -20,7 +20,8 @@ function processElement(vnode, container) {
 function mountElement(vnode, container) {
   const { type, props, children } = vnode;
 
-  const el = document.createElement(type);
+  // 设置element类型的vnode
+  const el = (vnode.el = document.createElement(type));
 
   for (const key in props) {
     el.setAttribute(key, props[key]);
@@ -45,15 +46,19 @@ function processComponent(vnode, container) {
   mountComponent(vnode, container);
 }
 
-function mountComponent(vnode, container) {
-  const instance = createComponentInstance(vnode);
+function mountComponent(initialVNode, container) {
+  const instance = createComponentInstance(initialVNode);
 
   setupComponent(instance);
-  setupRenderEffect(instance, container);
+  setupRenderEffect(instance, initialVNode, container);
 }
 
-function setupRenderEffect(instance: any, container) {
-  const subTree = instance.render();
+function setupRenderEffect(instance: any, initialVNode, container) {
+  const { proxy } = instance;
+  const subTree = instance.render.call(proxy);
 
   patch(subTree, container);
+
+  // initialVNode是component类型的vnode，需要从element类型的vnode获取
+  initialVNode.el = subTree.el;
 }
