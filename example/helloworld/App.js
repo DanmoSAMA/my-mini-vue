@@ -8,7 +8,9 @@ export const App = {
       'div',
       {
         id: 'root',
-        class: 'red'
+        class: 'red',
+        onClick: () => console.log('onclick'),
+        onMousedown: () => console.log('onmousedown')
       },
       'hi, ' + this.msg
       // 'hi, mini-vue'

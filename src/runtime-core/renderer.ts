@@ -23,8 +23,16 @@ function mountElement(vnode, container) {
   // 设置element类型的vnode
   const el = (vnode.el = document.createElement(type));
 
+  const isOn = (key) => /^on[A-Z]/.test(key);
+
   for (const key in props) {
-    el.setAttribute(key, props[key]);
+    const value = props[key];
+    if (isOn(key)) {
+      const event = key.slice(2).toLocaleLowerCase();
+      el.addEventListener(event, value);
+    } else {
+      el.setAttribute(key, value);
+    }
   }
 
   if (vnode.shapeFlag & ShapeFlags.TEXT_CHILDREN) {
