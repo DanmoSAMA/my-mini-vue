@@ -2,7 +2,8 @@ import { hasOwn } from '../shared/index';
 
 const publicPropertiesMap = {
   // 从component类型的vnode获取el
-  $el: (i) => i.vnode.el
+  $el: (i) => i.vnode.el,
+  $slots: (i) => i.slots
 };
 
 export const PublicInstanceProxyHandlers = {

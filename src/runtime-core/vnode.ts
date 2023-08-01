@@ -1,3 +1,4 @@
+import { isObject } from '../shared/index';
 import { ShapeFlags } from '../shared/shapeFlags';
 
 export function createVNode(type, props?, children?) {
@@ -10,9 +11,15 @@ export function createVNode(type, props?, children?) {
   };
 
   if (typeof children === 'string') {
-    vnode.shapeFlag = vnode.shapeFlag | ShapeFlags.TEXT_CHILDREN;
+    vnode.shapeFlag |= ShapeFlags.TEXT_CHILDREN;
   } else if (Array.isArray(children)) {
-    vnode.shapeFlag = vnode.shapeFlag | ShapeFlags.ARRAY_CHILDREN;
+    vnode.shapeFlag |= ShapeFlags.ARRAY_CHILDREN;
+  }
+
+  if (vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
+    if (isObject(vnode.children)) {
+      vnode.shapeFlag |= ShapeFlags.SLOT_CHILDREN;
+    }
   }
 
   return vnode;
