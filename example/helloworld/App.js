@@ -16,12 +16,15 @@ export const App = {
       [
         h('div', {}, 'hi,' + this.msg),
         h(Foo, {
-          count: 1
+          count: 1,
+          add: (a, b) => {
+            console.log('add', a, b);
+          },
+          someEvent: () => {
+            console.log('some event');
+          }
         })
       ]
-
-      // 'hi, mini-vue'
-      // [h('p', { class: 'red' }, 'hi'), h('p', { class: 'blue' }, 'mini-vue')]
     );
   },
 

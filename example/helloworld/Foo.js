@@ -1,12 +1,9 @@
 import { h } from '../../lib/guide-mini-vue.esm.js';
 
 export const Foo = {
-  setup(props) {
-    console.log(props);
-
-    // shallow readonly
-    props.count++;
-    console.log(props);
+  setup(props, { emit }) {
+    emit('add', 1, 2);
+    emit('some-event');
   },
   render() {
     return h('div', {}, 'foo: ' + this.count);

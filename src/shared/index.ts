@@ -10,3 +10,9 @@ export const hasChanged = (val, newVal) => {
 
 export const hasOwn = (val, key) =>
   Object.prototype.hasOwnProperty.call(val, key);
+
+export const camelize = (str) => {
+  return str.replace(/-(\w)/g, (_, c) => {
+    return c ? c.toUpperCase() : '';
+  });
+};
