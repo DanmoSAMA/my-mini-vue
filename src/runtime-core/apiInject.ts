@@ -29,5 +29,4 @@ export function inject(key, defaultValue) {
       return defaultValue;
     }
   }
-  // const provides = parentNode.
 }
