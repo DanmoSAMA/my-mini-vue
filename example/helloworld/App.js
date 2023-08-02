@@ -1,4 +1,4 @@
-import { h } from '../../lib/my-mini-vue.esm.js';
+import { createTextVNode, h } from '../../lib/my-mini-vue.esm.js';
 import { Foo } from './Foo.js';
 
 export const App = {
@@ -13,12 +13,14 @@ export const App = {
       }
       // [h('p', {}, 'slot test1'), h('p', {}, 'slot test2')]
     );
+    // const bar = h('div', {}, ['str1', 'str2', 'str3']);
+    const bar = h('div', {}, [h('p', {}, 'test'), createTextVNode('text结点')]);
     return h(
       'div',
       {
         id: 'root'
       },
-      [app, foo]
+      [app, foo, bar]
     );
   },
 
