@@ -4,14 +4,18 @@ function createElement(type) {
   return document.createElement(type);
 }
 
-function patchProp(el, key, value) {
+function patchProp(el, key, oldValue, newValue) {
   const isOn = (key) => /^on[A-Z]/.test(key);
 
   if (isOn(key)) {
     const event = key.slice(2).toLocaleLowerCase();
-    el.addEventListener(event, value);
+    el.addEventListener(event, newValue);
   } else {
-    el.setAttribute(key, value);
+    if (newValue === undefined || newValue === null) {
+      el.removeAttribute(key);
+    } else {
+      el.setAttribute(key, newValue);
+    }
   }
 }
 

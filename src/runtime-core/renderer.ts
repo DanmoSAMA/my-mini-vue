@@ -1,4 +1,5 @@
 import { effect } from '../reactivity/effect';
+import { EMPTY_OBJ } from '../shared';
 import { ShapeFlags } from '../shared/shapeFlags';
 import { createComponentInstance, setupComponent } from './component';
 import { createAppAPI } from './createApp';
@@ -56,7 +57,7 @@ export function createRenderer(options) {
 
     for (const key in props) {
       const value = props[key];
-      hostPatchProp(el, key, value);
+      hostPatchProp(el, key, null, value);
     }
 
     if (vnode.shapeFlag & ShapeFlags.TEXT_CHILDREN) {
@@ -69,8 +70,27 @@ export function createRenderer(options) {
   }
 
   function patchElement(n1, n2, container) {
-    console.log(n1);
-    console.log(n2);
+    const prevProps = n1.props || EMPTY_OBJ;
+    const nextProps = n2.props || EMPTY_OBJ;
+
+    const el = (n2.el = n1.el);
+
+    patchProps(el, prevProps, nextProps);
+  }
+
+  function patchProps(el, oldProps, newProps) {
+    if (oldProps !== newProps) {
+      for (const key in newProps) {
+        hostPatchProp(el, key, oldProps[key], newProps[key]);
+      }
+    }
+    if (oldProps !== EMPTY_OBJ) {
+      for (const key in oldProps) {
+        if (!(key in newProps)) {
+          hostPatchProp(el, key, oldProps[key], null);
+        }
+      }
+    }
   }
 
   function mountChildren(vnode, container, parentComponent) {
