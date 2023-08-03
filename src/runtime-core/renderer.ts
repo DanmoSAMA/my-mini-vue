@@ -23,7 +23,7 @@ export function createRenderer(options) {
 
     switch (type) {
       case Fragment:
-        processFragment(n1, n2, container, parentComponent, anchor);
+        processFragment(n1, n2, container, parentComponent);
         break;
       case Text:
         processText(n2, container);
@@ -32,7 +32,7 @@ export function createRenderer(options) {
         if (n2.shapeFlag & ShapeFlags.ELEMENT) {
           processElement(n1, n2, container, parentComponent, anchor);
         } else if (n2.shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
-          processComponent(n2, container, parentComponent, anchor);
+          processComponent(n2, container, parentComponent);
         }
     }
   }
@@ -43,14 +43,8 @@ export function createRenderer(options) {
     container.append(textNode);
   }
 
-  function processFragment(
-    n1,
-    n2: any,
-    container: any,
-    parentComponent,
-    anchor
-  ) {
-    mountChildren(n2.children, container, parentComponent, anchor);
+  function processFragment(n1, n2: any, container: any, parentComponent) {
+    mountChildren(n2.children, container, parentComponent);
   }
 
   function processElement(n1, n2, container, parentComponent, anchor) {
@@ -85,7 +79,7 @@ export function createRenderer(options) {
     } else {
       if (prevShapeFlag & ShapeFlags.TEXT_CHILDREN) {
         hostSetElementText(container, '');
-        mountChildren(c2, container, parentComponent, anchor);
+        mountChildren(c2, container, parentComponent);
       } else {
         patchKeyedChildren(c1, c2, container, parentComponent, anchor);
       }
@@ -201,42 +195,42 @@ export function createRenderer(options) {
     if (vnode.shapeFlag & ShapeFlags.TEXT_CHILDREN) {
       el.textContent = children;
     } else if (vnode.shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
-      mountChildren(children, el, parentComponent, anchor);
+      mountChildren(children, el, parentComponent);
     }
 
     hostInsert(el, container, anchor);
   }
 
-  function mountChildren(children, container, parentComponent, anchor) {
+  function mountChildren(children, container, parentComponent) {
     children.forEach((vnode) => {
-      patch(null, vnode, container, parentComponent, anchor);
+      patch(null, vnode, container, parentComponent, null);
     });
   }
 
-  function processComponent(vnode, container, parentComponent, anchor) {
-    mountComponent(vnode, container, parentComponent, anchor);
+  function processComponent(vnode, container, parentComponent) {
+    mountComponent(vnode, container, parentComponent);
   }
 
-  function mountComponent(initialVNode, container, parentComponent, anchor) {
+  function mountComponent(initialVNode, container, parentComponent) {
     const instance = createComponentInstance(initialVNode, parentComponent);
 
     setupComponent(instance);
-    setupRenderEffect(instance, initialVNode, container, anchor);
+    setupRenderEffect(instance, initialVNode, container);
   }
 
-  function setupRenderEffect(instance: any, initialVNode, container, anchor) {
+  function setupRenderEffect(instance: any, initialVNode, container) {
     effect(() => {
       const { proxy, isMounted } = instance;
 
       if (!isMounted) {
         const subTree = (instance.subTree = instance.render.call(proxy));
-        patch(null, subTree, container, instance, anchor);
+        patch(null, subTree, container, instance, null);
 
         initialVNode.el = subTree.el;
         instance.isMounted = true;
       } else {
         const subTree = instance.render.call(proxy); // 新的vnode
-        patch(instance.subTree, subTree, container, instance, anchor);
+        patch(instance.subTree, subTree, container, instance, null);
         instance.subTree = subTree;
       }
     });
