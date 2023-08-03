@@ -1,4 +1,4 @@
-import { ShapeFlags } from '../shared/shapeFlags';
+import { ShapeFlags } from '../shared/ShapeFlags';
 
 export function initSlots(instance, children) {
   const { vnode } = instance;

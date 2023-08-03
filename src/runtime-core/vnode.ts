@@ -1,5 +1,5 @@
 import { isObject } from '../shared/index';
-import { ShapeFlags } from '../shared/shapeFlags';
+import { ShapeFlags } from '../shared/ShapeFlags';
 
 export const Fragment = Symbol('Fragment');
 export const Text = Symbol('Text');
@@ -9,6 +9,7 @@ export function createVNode(type, props?, children?) {
     type,
     props,
     children,
+    key: props && props.key,
     shapeFlag: getShapeFlags(type),
     el: null
   };
