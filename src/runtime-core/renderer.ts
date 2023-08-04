@@ -4,6 +4,7 @@ import { ShapeFlags } from '../shared/ShapeFlags';
 import { createComponentInstance, setupComponent } from './component';
 import { shouldComponentUpdate } from './componentUpdateUtils';
 import { createAppAPI } from './createApp';
+import { queueJobs } from './scheduler';
 import { Fragment, Text } from './vnode';
 
 export function createRenderer(options) {
@@ -57,6 +58,7 @@ export function createRenderer(options) {
   }
 
   function patchElement(n1, n2, container, parentComponent, anchor) {
+    console.log('patchElement');
     const prevProps = n1.props || EMPTY_OBJ;
     const nextProps = n2.props || EMPTY_OBJ;
 
@@ -314,28 +316,35 @@ export function createRenderer(options) {
   }
 
   function setupRenderEffect(instance: any, initialVNode, container) {
-    instance.update = effect(() => {
-      const { proxy, isMounted } = instance;
+    instance.update = effect(
+      () => {
+        const { proxy, isMounted } = instance;
 
-      if (!isMounted) {
-        const subTree = (instance.subTree = instance.render.call(proxy));
-        patch(null, subTree, container, instance, null);
+        if (!isMounted) {
+          const subTree = (instance.subTree = instance.render.call(proxy));
+          patch(null, subTree, container, instance, null);
 
-        initialVNode.el = subTree.el;
-        instance.isMounted = true;
-      } else {
-        const { next, vnode } = instance;
+          initialVNode.el = subTree.el;
+          instance.isMounted = true;
+        } else {
+          const { next } = instance;
 
-        if (next) {
-          // next.el = vnode.el;
-          updateComponentPreRender(instance, next);
+          if (next) {
+            updateComponentPreRender(instance, next);
+          }
+
+          const subTree = instance.render.call(proxy); // 新的element vnode
+          patch(instance.subTree, subTree, container, instance, null);
+          instance.subTree = subTree;
         }
-
-        const subTree = instance.render.call(proxy); // 新的element vnode
-        patch(instance.subTree, subTree, container, instance, null);
-        instance.subTree = subTree;
+      },
+      {
+        scheduler: () => {
+          console.log('update - scheduler');
+          queueJobs(instance.update);
+        }
       }
-    });
+    );
   }
 
   return {
