@@ -2,6 +2,7 @@ import { effect } from '../reactivity/effect';
 import { EMPTY_OBJ } from '../shared';
 import { ShapeFlags } from '../shared/ShapeFlags';
 import { createComponentInstance, setupComponent } from './component';
+import { shouldComponentUpdate } from './componentUpdateUtils';
 import { createAppAPI } from './createApp';
 import { Fragment, Text } from './vnode';
 
@@ -32,7 +33,7 @@ export function createRenderer(options) {
         if (n2.shapeFlag & ShapeFlags.ELEMENT) {
           processElement(n1, n2, container, parentComponent, anchor);
         } else if (n2.shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
-          processComponent(n2, container, parentComponent);
+          processComponent(n1, n2, container, parentComponent);
         }
     }
   }
@@ -181,7 +182,7 @@ export function createRenderer(options) {
         // 原数组的元素 在新数组中的下标
         let newIndex;
 
-        if (prevChild.key !== null) {
+        if (prevChild.key !== null && prevChild.key !== undefined) {
           newIndex = keyToNewIndexMap.get(prevChild.key);
         } else {
           for (let j = s2; j <= e2; j++) {
@@ -279,19 +280,41 @@ export function createRenderer(options) {
     });
   }
 
-  function processComponent(vnode, container, parentComponent) {
-    mountComponent(vnode, container, parentComponent);
+  function processComponent(n1, n2, container, parentComponent) {
+    if (!n1) {
+      mountComponent(n2, container, parentComponent);
+    } else {
+      updateComponent(n1, n2);
+    }
+  }
+
+  function updateComponent(n1, n2) {
+    // 调用render，生成新的element vnode，再进行patch
+
+    const instance = (n2.component = n1.component);
+    if (shouldComponentUpdate(n1, n2)) {
+      instance.next = n2;
+      instance.update();
+    } else {
+      // 无需更新，因此el也不会再改变，直接赋值给n2
+      n2.el = n1.el;
+      instance.vnode = n2;
+    }
   }
 
   function mountComponent(initialVNode, container, parentComponent) {
-    const instance = createComponentInstance(initialVNode, parentComponent);
+    // 为了实现组件更新，在vnode上保存instance
+    const instance = (initialVNode.component = createComponentInstance(
+      initialVNode,
+      parentComponent
+    ));
 
     setupComponent(instance);
     setupRenderEffect(instance, initialVNode, container);
   }
 
   function setupRenderEffect(instance: any, initialVNode, container) {
-    effect(() => {
+    instance.update = effect(() => {
       const { proxy, isMounted } = instance;
 
       if (!isMounted) {
@@ -301,7 +324,14 @@ export function createRenderer(options) {
         initialVNode.el = subTree.el;
         instance.isMounted = true;
       } else {
-        const subTree = instance.render.call(proxy); // 新的vnode
+        const { next, vnode } = instance;
+
+        if (next) {
+          // next.el = vnode.el;
+          updateComponentPreRender(instance, next);
+        }
+
+        const subTree = instance.render.call(proxy); // 新的element vnode
         patch(instance.subTree, subTree, container, instance, null);
         instance.subTree = subTree;
       }
@@ -311,6 +341,12 @@ export function createRenderer(options) {
   return {
     createApp: createAppAPI(render)
   };
+}
+
+function updateComponentPreRender(instance, nextVNode) {
+  instance.props = nextVNode.props;
+  instance.next = null;
+  instance.vnode = nextVNode;
 }
 
 function getSequence(arr) {
