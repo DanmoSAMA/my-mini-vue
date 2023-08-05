@@ -7,7 +7,7 @@ const enum TagType {
 
 export function baseParse(content: string) {
   const context = createParserContext(content);
-  return createRoot(parseChildren(context));
+  return createRoot(parseChildren(context, []));
 }
 
 function createParserContext(content: string): any {
@@ -16,25 +16,52 @@ function createParserContext(content: string): any {
   };
 }
 
-function parseChildren(context) {
+// ancestors是栈
+function parseChildren(context, ancestors) {
   const nodes: any = [];
-  const s = context.source;
 
   let node;
 
-  if (s.startsWith('{{')) {
-    node = parseInterpolation(context);
-  } else if (s[0] === '<') {
-    if (/[a-z]/i.test(s[1])) {
-      node = parseElement(context);
+  while (!isEnd(context, ancestors)) {
+    const s = context.source;
+    if (s.startsWith('{{')) {
+      node = parseInterpolation(context);
+    } else if (s[0] === '<') {
+      if (/[a-z]/i.test(s[1])) {
+        node = parseElement(context, ancestors);
+      }
+    } else {
+      node = parseText(context);
     }
-  } else {
-    node = parseText(context);
+    nodes.push(node);
   }
 
-  nodes.push(node);
-
   return nodes;
+}
+
+function isEnd(context, ancestors) {
+  const s = context.source;
+  const parentTag = ancestors.at(-1);
+
+  if (s.startsWith(`</`)) {
+    if (parentTag) {
+      if (s.startsWith(`</${parentTag}>`)) {
+        ancestors.pop();
+        return true;
+      } else {
+        // <div><span></div>
+        throw new Error(`缺少结束标签:${parentTag}`);
+        // <div></span></div>
+        // 虽然本意是让span缺少开始标签，但这种情况也可以认为是div缺少结束标签
+      }
+    } else {
+      // </div>
+      const endIndex = s.indexOf('>');
+      throw new Error(`缺少开始标签:${s.slice(2, endIndex)}`);
+    }
+  }
+
+  return !s;
 }
 
 function parseInterpolation(context) {
@@ -64,7 +91,7 @@ function parseInterpolation(context) {
   // 提取中间的content，并且移除
   const rawContent = parseTextData(context, rawContentLength);
 
-  // 边缘case，去掉多余空格
+  // edge case：去掉多余空格
   const content = rawContent.trim();
 
   // 移除 }}
@@ -79,7 +106,7 @@ function parseInterpolation(context) {
   };
 }
 
-function parseElement(context) {
+function parseElement(context, ancestors) {
   // <div></div>
   //  =>
   // return {
@@ -87,16 +114,19 @@ function parseElement(context) {
   //   tag: 'div'
   // };
 
-  const element = parseTag(context, TagType.Start);
+  const element: any = parseTag(context, TagType.Start);
+  // 处理tag中间的children
+  ancestors.push(element.tag);
+  element.children = parseChildren(context, ancestors);
+
   parseTag(context, TagType.End);
   return element;
 }
 
 function parseTag(context, type: TagType) {
-  const match: any = /^<\/?([a-z]*)/i.exec(context.source);
+  const match: any = /^<\/?([a-z]*)>/i.exec(context.source);
   const tag = match[1];
   advanceBy(context, match[0].length);
-  advanceBy(context, 1);
 
   if (type === TagType.End) return;
 
@@ -113,8 +143,18 @@ function parseText(context) {
   //   type: NodeTypes.TEXT,
   //   content: 'some text'
   // };
+  const s = context.source;
+  const endTokens = ['<', '{{'];
+  let endIndex = s.length;
 
-  const content = parseTextData(context, context.source.length);
+  for (const token of endTokens) {
+    const index = s.indexOf(token);
+    if (index !== -1 && index < endIndex) {
+      endIndex = index;
+    }
+  }
+
+  const content = parseTextData(context, endIndex);
 
   return {
     type: NodeTypes.TEXT,
