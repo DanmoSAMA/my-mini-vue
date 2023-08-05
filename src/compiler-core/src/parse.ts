@@ -28,6 +28,8 @@ function parseChildren(context) {
     if (/[a-z]/i.test(s[1])) {
       node = parseElement(context);
     }
+  } else {
+    node = parseText(context);
   }
 
   nodes.push(node);
@@ -57,15 +59,16 @@ function parseInterpolation(context) {
   // 移除 {{
   advanceBy(context, openDelimiter.length);
 
-  // 移除 }}
   const rawContentLength = closeIndex - openDelimiter.length;
-  const rawContent = context.source.slice(0, rawContentLength);
+
+  // 提取中间的content，并且移除
+  const rawContent = parseTextData(context, rawContentLength);
 
   // 边缘case，去掉多余空格
   const content = rawContent.trim();
 
-  // {{ message }} 这部分已经处理完了，后面可能还有字符，继续向前移动
-  advanceBy(context, rawContentLength + closeDelimiter.length);
+  // 移除 }}
+  advanceBy(context, closeDelimiter.length);
 
   return {
     type: NodeTypes.INTERPOLATION,
@@ -101,6 +104,29 @@ function parseTag(context, type: TagType) {
     type: NodeTypes.ELEMENT,
     tag
   };
+}
+
+function parseText(context) {
+  // some text
+  // =>
+  // return {
+  //   type: NodeTypes.TEXT,
+  //   content: 'some text'
+  // };
+
+  const content = parseTextData(context, context.source.length);
+
+  return {
+    type: NodeTypes.TEXT,
+    content: content
+  };
+}
+
+// 封装：提取 + 移除
+function parseTextData(context, length) {
+  const content = context.source.slice(0, length);
+  advanceBy(context, length);
+  return content;
 }
 
 function advanceBy(context: any, length: number) {
