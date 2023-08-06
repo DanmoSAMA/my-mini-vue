@@ -19,6 +19,7 @@ function createTransformContext(root, options) {
     nodeTransforms: options.nodeTransforms,
     helpers: new Map(),
     helper(key) {
+      // 在codegen中，用于生成最开始的引入语句
       context.helpers.set(key, 1);
     }
   };
@@ -27,10 +28,14 @@ function createTransformContext(root, options) {
 
 function traverseNode(node, context) {
   const { nodeTransforms } = context;
+  const exitFns: any = [];
 
   if (nodeTransforms) {
     for (const transform of nodeTransforms) {
-      transform(node);
+      const onExit = transform(node, context);
+      if (onExit) {
+        exitFns.push(onExit);
+      }
     }
   }
 
@@ -44,6 +49,11 @@ function traverseNode(node, context) {
       break;
     default:
       break;
+  }
+
+  let i = exitFns.length;
+  while (i--) {
+    exitFns[i]();
   }
 }
 
