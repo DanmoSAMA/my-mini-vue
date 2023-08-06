@@ -26,10 +26,8 @@ function parseChildren(context, ancestors) {
     const s = context.source;
     if (s.startsWith('{{')) {
       node = parseInterpolation(context);
-    } else if (s[0] === '<') {
-      if (/[a-z]/i.test(s[1])) {
-        node = parseElement(context, ancestors);
-      }
+    } else if (/^<[a-z]+>/i.test(s)) {
+      node = parseElement(context, ancestors);
     } else {
       node = parseText(context);
     }
@@ -52,7 +50,7 @@ function isEnd(context, ancestors) {
         // <div><span></div>
         throw new Error(`缺少结束标签:${parentTag}`);
         // <div></span></div>
-        // 虽然本意是让span缺少开始标签，但这种情况也可以认为是div缺少结束标签
+        // 虽然本意是让span缺少开始标签，这种情况也可以认为是div缺少结束标签
       }
     } else {
       // </div>
