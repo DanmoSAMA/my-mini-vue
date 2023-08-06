@@ -1,7 +1,12 @@
+import { NodeTypes } from './ast';
+import { TO_DISPLAY_STRING } from './runtimeHelpers';
+
 export function transform(root, options = {}) {
   const context = createTransformContext(root, options);
   traverseNode(root, context);
   createRootCodegen(root);
+
+  root.helpers = [...context.helpers.keys()];
 }
 
 function createRootCodegen(root) {
@@ -9,10 +14,15 @@ function createRootCodegen(root) {
 }
 
 function createTransformContext(root, options) {
-  return {
+  const context = {
     root,
-    nodeTransforms: options.nodeTransforms
+    nodeTransforms: options.nodeTransforms,
+    helpers: new Map(),
+    helper(key) {
+      context.helpers.set(key, 1);
+    }
   };
+  return context;
 }
 
 function traverseNode(node, context) {
@@ -24,15 +34,23 @@ function traverseNode(node, context) {
     }
   }
 
-  traverseChildren(node, context);
+  switch (node.type) {
+    case NodeTypes.INTERPOLATION:
+      context.helper(TO_DISPLAY_STRING);
+      break;
+    case NodeTypes.ROOT:
+    case NodeTypes.ELEMENT:
+      traverseChildren(node, context);
+      break;
+    default:
+      break;
+  }
 }
 
 function traverseChildren(node, context) {
   const { children } = node;
 
-  if (children) {
-    for (const child of children) {
-      traverseNode(child, context);
-    }
+  for (const child of children) {
+    traverseNode(child, context);
   }
 }
