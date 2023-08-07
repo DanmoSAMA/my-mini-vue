@@ -1,9 +1,10 @@
 import { isObject } from '../shared/index';
 import { ShapeFlags } from '../shared/ShapeFlags';
-
 export const Fragment = Symbol('Fragment');
 export const Text = Symbol('Text');
 
+// 为了在template生成的render函数中使用
+export { createVNode as createElementVNode };
 export function createVNode(type, props?, children?) {
   const vnode = {
     type,
